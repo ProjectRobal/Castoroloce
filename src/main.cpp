@@ -16,6 +16,8 @@
 #define MOTORA 21
 #define MOTORB 22
 
+#define INFO_LED 2
+
 BluetoothSerial SerialBT;
 
 Motor engine(MOTORA,MOTORB);
@@ -53,9 +55,15 @@ void decode()
 
   memmove((uint8_t*)&speed,read_buffer+1,sizeof(uint16_t));
 
-  engine.SetDirection(direction);
+  engine.Update(direction,speed);
+}
 
-  engine.setSpeed(speed);
+
+hw_timer_t *info_blink = NULL;
+
+void IRAM_ATTR blink()
+{
+  digitalWrite(INFO_LED,!digitalRead(INFO_LED));
 }
 
 void setup() {
@@ -65,6 +73,15 @@ void setup() {
 
   Serial.println("Bluetooth has started");
 
+  pinMode(INFO_LED,OUTPUT);
+
+  // timer blinking
+  info_blink=timerBegin(0,80,true);
+  timerAttachInterrupt(info_blink, &blink, true);
+  // call function each 500 ms
+  timerAlarmWrite(info_blink, 500000, true);
+  timerAlarmEnable(info_blink);
+
 }
 
 void loop() {
@@ -72,12 +89,14 @@ void loop() {
   //when connection is lost, stop immediately
   if(!SerialBT.connected())
   {
-    engine.SetDirection(Motor::STOP);
-
+    engine.Update(Motor::STOP,0);
+    timerAlarmEnable(info_blink);
     // try to connect again
     SerialBT.connect();
     return;
   }
+  
+  timerAlarmDisable(info_blink);
 
   if(SerialBT.available())
   {

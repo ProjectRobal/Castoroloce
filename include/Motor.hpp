@@ -20,7 +20,6 @@ class Motor
     uint8_t motor_B;
 
     uint16_t speed;
-    uint8_t* curr_motor;
 
     Modes mode;
 
@@ -33,9 +32,8 @@ class Motor
     {
         pinMode(motor_A,OUTPUT);
         pinMode(motor_B,OUTPUT);
-        curr_motor=NULL;
 
-        SetDirection(STOP);
+        Update(STOP,0);
     }
 
     Modes Direction() const
@@ -43,12 +41,8 @@ class Motor
         return mode;
     }
 
-    void SetDirection(const Modes& _m)
+    void Update(const Modes& _m,const uint16_t _speed)
     {
-        if(_m==mode)
-        {
-            return;
-        }
         speed=0;
         mode=_m;
         switch(mode)
@@ -56,16 +50,14 @@ class Motor
             case FORWARD:
 
             digitalWrite(motor_A,HIGH);
-            analogWrite(motor_B,65535);
-            curr_motor=&motor_B;
+            analogWrite(motor_B,65535-speed);
 
             break;
 
             case BACKWARD:
 
-            analogWrite(motor_A,65535);
+            analogWrite(motor_A,65535-speed);
             digitalWrite(motor_B,HIGH);
-            curr_motor=&motor_A;
 
             break;
 
@@ -75,16 +67,6 @@ class Motor
             digitalWrite(motor_B,HIGH);
         }
         
-    }
-
-    void setSpeed(const uint16_t& _speed)
-    {
-        if(!curr_motor)
-        {
-            return;
-        }
-        speed=_speed;
-        analogWrite(*curr_motor,65535-speed);
     }
 
     uint16_t Speed() const

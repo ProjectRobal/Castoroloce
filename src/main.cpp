@@ -1,6 +1,8 @@
 #include <Arduino.h>
 
 #include <BluetoothSerial.h>
+#include <ArduinoJson.h>
+#include <Servo.h>
 
 #if !defined(CONFIG_BT_ENABLED) || !defined(CONFIG_BLUEDROID_ENABLED)
 #error Bluetooth is not enabled! Please run `make menuconfig` to and enable it
@@ -13,8 +15,11 @@
 #define START_BYTE 0x11
 
 // set appropiet pins
-#define MOTORA 21
-#define MOTORB 22
+#define MOTORA 27
+#define MOTORB 26
+
+// set appropiet pin
+#define SERVO_PIN 13
 
 #define INFO_LED 2
 
@@ -22,42 +27,41 @@ BluetoothSerial SerialBT;
 
 Motor engine(MOTORA,MOTORB);
 
-// every data frame:
-// [ start_byte , direction , speed(2 bytes)]
+Servo s_wheel;
 
+/*
+  JSON:
+    angel - an angel of steering wheel
+    speed - an motor speed
+    mode - a direction in which motor turns
+*/
 
-uint8_t read_buffer[3];
-volatile uint8_t counter=0;
-volatile bool transmision_started=false;
-
-void read_serial(uint8_t byte)
+void read_serial()
 {
-  if(byte==START_BYTE)
+  StaticJsonDocument<128> doc;
+
+  DeserializationError err= deserializeJson(doc,SerialBT);
+
+  if(err == DeserializationError::Ok)
   {
-    transmision_started=true;
-    counter=0;
+    uint16_t angel=doc["angel"].as<uint16_t>();
+    uint16_t speed=doc["speed"].as<uint16_t>();
+    uint8_t dir=doc["mode"].as<uint8_t>();
+    Serial.print("Angel: ");
+    Serial.println(angel);
+    s_wheel.write(angel);
+    engine.Update(static_cast<Motor::Modes>(dir),speed);
   }
-
-  if(!transmision_started)
+  else
   {
-    return;
+    Serial.println("Error reading JSON");
+    Serial.println(err.c_str());
+    while(SerialBT.available()>0)
+    {
+      SerialBT.read();
+    }
   }
-
-  read_buffer[++counter]=byte;
 }
-
-// get information from read_buffer
-void decode()
-{
-  Motor::Modes direction=static_cast<Motor::Modes>(read_buffer[0]);
-
-  uint16_t speed=0;
-
-  memmove((uint8_t*)&speed,read_buffer+1,sizeof(uint16_t));
-
-  engine.Update(direction,speed);
-}
-
 
 hw_timer_t *info_blink = NULL;
 
@@ -82,6 +86,9 @@ void setup() {
   timerAlarmWrite(info_blink, 500000, true);
   timerAlarmEnable(info_blink);
 
+  s_wheel.attach(SERVO_PIN,0,0,180,1638,7864);
+  s_wheel.write(45);
+
 }
 
 void loop() {
@@ -91,22 +98,16 @@ void loop() {
   {
     engine.Update(Motor::STOP,0);
     timerAlarmEnable(info_blink);
-    // try to connect again
-    SerialBT.connect();
+    s_wheel.write(45);
     return;
   }
   
   timerAlarmDisable(info_blink);
+  digitalWrite(INFO_LED,LOW);
 
   if(SerialBT.available())
   {
-    if((transmision_started)&&(counter==3))
-    {
-      decode();
-      transmision_started=false;
-    }
-
-    read_serial(SerialBT.read());
+    read_serial();
   }
 
 }

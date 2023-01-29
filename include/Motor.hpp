@@ -3,6 +3,8 @@
 
 #include <Arduino.h>
 
+#define FREQUENCY 10000
+
 class Motor
 {
     public:
@@ -33,6 +35,12 @@ class Motor
         pinMode(motor_A,OUTPUT);
         pinMode(motor_B,OUTPUT);
 
+        ledcSetup(1,FREQUENCY,16);
+        ledcSetup(2,FREQUENCY,16);
+
+        ledcAttachPin(motor_A,1);
+        ledcAttachPin(motor_B,2);
+
         Update(STOP,0);
     }
 
@@ -49,22 +57,22 @@ class Motor
         {
             case FORWARD:
 
-            digitalWrite(motor_A,HIGH);
-            analogWrite(motor_B,65535-speed);
+            ledcWrite(1,65535);
+            ledcWrite(2,65535-speed);
 
             break;
 
             case BACKWARD:
 
-            analogWrite(motor_A,65535-speed);
-            digitalWrite(motor_B,HIGH);
+            ledcWrite(2,65535);
+            ledcWrite(1,65535-speed);
 
             break;
 
             case STOP:
             default:
-            digitalWrite(motor_A,HIGH);
-            digitalWrite(motor_B,HIGH);
+            ledcWrite(2,65535);
+            ledcWrite(1,65535);
         }
         
     }

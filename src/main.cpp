@@ -2,7 +2,7 @@
 
 #include <BluetoothSerial.h>
 #include <ArduinoJson.h>
-#include <Servo.h>
+#include <ESP32Servo.h>
 
 #if !defined(CONFIG_BT_ENABLED) || !defined(CONFIG_BLUEDROID_ENABLED)
 #error Bluetooth is not enabled! Please run `make menuconfig` to and enable it
@@ -11,8 +11,6 @@
 #include <Motor.hpp>
 
 #define NAME "Bober"
-
-#define START_BYTE 0x11
 
 // set appropiet pins
 #define MOTORA 27
@@ -47,9 +45,13 @@ void read_serial()
     uint16_t angel=doc["angel"].as<uint16_t>();
     uint16_t speed=doc["speed"].as<uint16_t>();
     uint8_t dir=doc["mode"].as<uint8_t>();
+
     Serial.print("Angel: ");
     Serial.println(angel);
+
+
     s_wheel.write(angel);
+
     engine.Update(static_cast<Motor::Modes>(dir),speed);
   }
   else
@@ -86,8 +88,14 @@ void setup() {
   timerAlarmWrite(info_blink, 500000, true);
   timerAlarmEnable(info_blink);
 
-  s_wheel.attach(SERVO_PIN,0,0,180,1638,7864);
-  s_wheel.write(45);
+  ESP32PWM::allocateTimer(0);
+	ESP32PWM::allocateTimer(1);
+	ESP32PWM::allocateTimer(2);
+	ESP32PWM::allocateTimer(3);
+
+  s_wheel.setPeriodHertz(50);
+  s_wheel.attach(SERVO_PIN,500,2500);
+  s_wheel.write(90);
 
 }
 

@@ -2,6 +2,9 @@
 
 #include <Robot.hpp>
 
+#define SDA 23
+#define SCL 22
+
 // set appropiet pins
 #define MOTORA (gpio_num_t)16
 #define MOTORB (gpio_num_t)17
@@ -24,6 +27,9 @@ void setup() {
   Serial.begin(115200);
 
   //adc_gpio_init(ADC_UNIT_2,ADC_CHANNEL_0);
+
+  Wire.begin(SDA,SCL);
+
 
 }
 

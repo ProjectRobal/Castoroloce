@@ -2,15 +2,29 @@
 
 #include <Arduino.h>
 
+#include <MPU6050.h>
+
+#include <driver/adc.h>
+
 #include <Motor.hpp>
 
 #include <PID.hpp>
 
-#include <driver/adc.h>
+
+#include <Vectors.hpp>
 
 
 // for same or less the sensor is on black
 #define SENSOR_ON_BLACK 280
+
+// for 50 Hz and 16 bit:
+
+// 1 ms
+#define SERVO_MIN 3277
+
+// 2 ms
+#define SERVO_MAX 6554
+
 
 class Robot
 {
@@ -26,11 +40,30 @@ class Robot
 
     PID<int32_t> regulator;
 
+    Vec3i gyroscope;
+    Vec3i acceleration;
+
+    MPU6050 mpu;
+
     bool on_track()
     {
         adc2_get_raw(_sensor,ADC_WIDTH_BIT_10,&adc_out);
 
         return SENSOR_ON_BLACK >= adc_out;
+    }
+
+    void read_mpu()
+    {
+        mpu.getMotion6(&acceleration.x,&acceleration.y,&acceleration.z,
+        &gyroscope.x,&gyroscope.y,&gyroscope.z);
+    }
+
+    // from -90 to 90
+    void set_angel(int8_t angel)
+    {
+        angel+=90;
+
+        ledcWrite(3,SERVO_MIN + (angel/180.0) * (SERVO_MAX-SERVO_MIN));
     }
 
     public:
@@ -45,11 +78,39 @@ class Robot
         //servo, channel 3 , 50 Hz , 16 bits resolution
         ledcSetup(3,50,16);
 
+        ledcAttachPin(servo,3);
+
+        mpu.initialize();
+
     }
 
     // main loop
     void loop()
     {
+        if(on_track())
+        {
+            Serial.println("On track!");
+        }
+
+        read_mpu();
+
+        Serial.println("Gyroscope:");
+        Serial.print("x: ");
+        Serial.print(gyroscope.x);
+        Serial.print("y: ");
+        Serial.print(gyroscope.y);
+        Serial.print("z: ");
+        Serial.print(gyroscope.z);
+        Serial.println();
+
+        Serial.println("Acceleration:");
+        Serial.print("x: ");
+        Serial.print(acceleration.x);
+        Serial.print("y: ");
+        Serial.print(acceleration.y);
+        Serial.print("z: ");
+        Serial.print(acceleration.z);
+        Serial.println();
 
     }
 

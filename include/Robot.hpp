@@ -20,12 +20,12 @@
 // for 50 Hz and 16 bit:
 
 // 0.65 ms
-#define SERVO_MIN 2100
+#define SERVO_MIN 1700
 
 // 2750 - front 
 
 // 1 ms
-#define SERVO_MAX 3400
+#define SERVO_MAX 3200
 
 
 class Robot
@@ -103,6 +103,33 @@ class Robot
         }
 
         read_mpu();
+
+        /*Serial.println(SERVO_MAX-width);
+
+        ledcWrite(3,SERVO_MAX-width);
+
+        width++;*/
+
+        /*ledcWrite(3,SERVO_MIN);
+
+        delay(5000);
+
+        ledcWrite(3,SERVO_MAX);
+
+        delay(5000);*/
+
+
+
+        /*if(width)
+        {
+            ledcWrite(3,SERVO_MIN);
+        }
+        else
+        {
+            ledcWrite(3,SERVO_MAX);
+        }
+
+        width!=width;*/
         
 
      /*   Serial.println("Gyroscope:");

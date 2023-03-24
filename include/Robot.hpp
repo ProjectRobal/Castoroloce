@@ -40,7 +40,7 @@ class Robot
 
     int adc_out;
 
-    PID<int32_t> regulator;
+    PID<float> regulator;
 
     Vec3i gyroscope;
     Vec3i acceleration;
@@ -79,10 +79,13 @@ class Robot
     : _m(mA,mB),
     _servo(servo),
     _sensor(sensor),
-    regulator(1,0,0)
+    regulator(-0.01,0,0)
     {
         adc_out=0;
         width=0;
+
+        regulator.setMax(90.0);
+        regulator.setMin(-90.0);
         
         //servo, channel 3 , 50 Hz , 16 bits resolution
         ledcSetup(3,50,16);
@@ -91,65 +94,48 @@ class Robot
 
         mpu.initialize();
 
+        mpu.setFullScaleAccelRange(MPU6050_IMU::ACCEL_FS::MPU6050_ACCEL_FS_8);
+        mpu.setFullScaleGyroRange(MPU6050_IMU::GYRO_FS::MPU6050_GYRO_FS_2000);
+
         set_angel(0);
+
+        regulator.setMax(90);
+        regulator.setMin(-90);
     }
 
-    // main loop
-    void loop()
+    // main loop, dt - timestamp
+    void loop(double dt)
     {
         if(on_track())
         {
             Serial.println("On track!");
+            return;
         }
 
-        read_mpu();
-
-        /*Serial.println(SERVO_MAX-width);
-
-        ledcWrite(3,SERVO_MAX-width);
-
-        width++;*/
-
-        /*ledcWrite(3,SERVO_MIN);
-
-        delay(5000);
-
-        ledcWrite(3,SERVO_MAX);
-
-        delay(5000);*/
-
-
-
-        /*if(width)
+        if(!mpu.testConnection())
         {
-            ledcWrite(3,SERVO_MIN);
-        }
-        else
-        {
-            ledcWrite(3,SERVO_MAX);
+            return;
         }
 
-        width!=width;*/
+        int16_t z=mpu.getRotationZ();
+
+        if(abs(z)<45)
+        {
+            return;
+        }
+
+        angel=regulator.step(z,dt);
+
+        set_angel(angel);
         
 
-     /*   Serial.println("Gyroscope:");
-        Serial.print("x: ");
-        Serial.print(gyroscope.x);
-        Serial.print("y: ");
-        Serial.print(gyroscope.y);
+        Serial.println("Gyroscope:");
         Serial.print("z: ");
-        Serial.print(gyroscope.z);
+        Serial.print(z);
         Serial.println();
-
-        Serial.println("Acceleration:");
-        Serial.print("x: ");
-        Serial.print(acceleration.x);
-        Serial.print("y: ");
-        Serial.print(acceleration.y);
-        Serial.print("z: ");
-        Serial.print(acceleration.z);
+        Serial.println("Angel: ");
+        Serial.print(angel);
         Serial.println();
-        */
 
     }
 

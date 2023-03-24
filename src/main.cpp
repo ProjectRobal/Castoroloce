@@ -2,6 +2,9 @@
 
 #include <Robot.hpp>
 
+#define TIMESTAMP 0.001
+
+
 #define SDA 23
 #define SCL 22
 
@@ -20,9 +23,19 @@
 // for same or less the sensor is on black
 #define SENSOR_ON_BLACK 280
 
-Robot robot(MOTORA,MOTORB,SERVO_PIN,SENSOR);
+Robot *robot;
+
+SemaphoreHandle_t xSemaphore=xSemaphoreCreateBinary();
+
+hw_timer_t *loop_timer=NULL;
+
+void IRAM_ATTR onTimer()
+{
+  xSemaphoreGive(xSemaphore);
+}
 
 void setup() {
+  xSemaphoreGive(xSemaphore);
   // put your setup code here, to run once:
   Serial.begin(115200);
 
@@ -30,15 +43,26 @@ void setup() {
 
   Wire.begin(SDA,SCL);
 
+  loop_timer=timerBegin(0,80,true);
+  timerAttachInterrupt(loop_timer,&onTimer,true);
+  timerAlarmWrite(loop_timer,1000,true);
+  timerAlarmEnable(loop_timer);
+
+  xSemaphoreTake(xSemaphore,portMAX_DELAY);
+
+  robot=new Robot(MOTORA,MOTORB,SERVO_PIN,SENSOR);
 
 }
 
-int adc_out;
-
 void loop() {
 
-  robot.loop();
+  if(xSemaphoreTake(xSemaphore,portMAX_DELAY))
+  {
+  timerAlarmDisable(loop_timer);
+  robot->loop(TIMESTAMP);
 
-  delay(100);
+  xSemaphoreGive(xSemaphore);
+  timerAlarmEnable(loop_timer);
+  }
 
 }

@@ -11,12 +11,18 @@ class PID
 
     T last_output;
 
+    T max;
+    T min;
+
+    bool filtr;
+
     double _dt;
 
     public:
 
     PID()
     {
+        filtr=false;
         _p=0;
         _i=0;
         _d=0;
@@ -27,6 +33,7 @@ class PID
     PID(T p,T i,T d)
     : _p(p),_i(i),_d(d)
     {
+        filtr=false;
         last_output=0;
         _dt=0.f;
     }
@@ -42,6 +49,18 @@ class PID
         {
             setD(d);
         }
+    }
+
+    void setMax(T _max)
+    {
+        filtr=true;
+        max=_max;
+    }
+
+    void setMin(T _min)
+    {
+        filtr=true;
+        min=_min;
     }
 
     void setP(T p)
@@ -87,7 +106,7 @@ class PID
     T step(T x,double dt)
     {
 
-        last_output=_p*x + _i*x*dt + _d*((last_output-x)/dt);
+        last_output=filter(_p*x + _i*x*dt + _d*((last_output-x)/dt));
 
         return last_output;
     }
@@ -95,6 +114,26 @@ class PID
     T step(T x)
     {
         return step(x,_dt);
+    }
+
+    T filter(T x)
+    {   
+        if(!filtr)
+        {
+            return x;
+        }
+
+        if(x>max)
+        {
+            return max;
+        }
+
+        if(x<min)
+        {
+            return min;
+        }
+
+        return x;
     }
 
 };

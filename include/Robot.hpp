@@ -4,6 +4,8 @@
 
 #include <Motor.hpp>
 
+#include <PID.hpp>
+
 #include <driver/adc.h>
 
 
@@ -22,6 +24,8 @@ class Robot
 
     int adc_out;
 
+    PID<int32_t> regulator;
+
     bool on_track()
     {
         adc2_get_raw(_sensor,ADC_WIDTH_BIT_10,&adc_out);
@@ -34,7 +38,8 @@ class Robot
     Robot(gpio_num_t mA,gpio_num_t mB,gpio_num_t servo,adc2_channel_t sensor)
     : _m(mA,mB),
     _servo(servo),
-    _sensor(sensor)
+    _sensor(sensor),
+    regulator(1,0,0)
     {
         adc_out=0;
         //servo, channel 3 , 50 Hz , 16 bits resolution

@@ -19,11 +19,13 @@
 
 // for 50 Hz and 16 bit:
 
-// 1 ms
-#define SERVO_MIN 3277
+// 0.65 ms
+#define SERVO_MIN 2100
 
-// 2 ms
-#define SERVO_MAX 6554
+// 2750 - front 
+
+// 1 ms
+#define SERVO_MAX 3400
 
 
 class Robot
@@ -45,6 +47,10 @@ class Robot
 
     MPU6050 mpu;
 
+    int8_t angel;
+
+    uint32_t width;
+
     bool on_track()
     {
         adc2_get_raw(_sensor,ADC_WIDTH_BIT_10,&adc_out);
@@ -63,8 +69,9 @@ class Robot
     {
         angel+=90;
 
-        ledcWrite(3,SERVO_MIN + (angel/180.0) * (SERVO_MAX-SERVO_MIN));
+        ledcWrite(3,SERVO_MIN + ((float)angel/180.0) * (SERVO_MAX-SERVO_MIN));
     }
+
 
     public:
 
@@ -75,6 +82,8 @@ class Robot
     regulator(1,0,0)
     {
         adc_out=0;
+        width=0;
+        
         //servo, channel 3 , 50 Hz , 16 bits resolution
         ledcSetup(3,50,16);
 
@@ -82,6 +91,7 @@ class Robot
 
         mpu.initialize();
 
+        set_angel(0);
     }
 
     // main loop
@@ -93,8 +103,9 @@ class Robot
         }
 
         read_mpu();
+        
 
-        Serial.println("Gyroscope:");
+     /*   Serial.println("Gyroscope:");
         Serial.print("x: ");
         Serial.print(gyroscope.x);
         Serial.print("y: ");
@@ -111,6 +122,7 @@ class Robot
         Serial.print("z: ");
         Serial.print(acceleration.z);
         Serial.println();
+        */
 
     }
 

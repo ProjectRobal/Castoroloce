@@ -39,6 +39,6 @@ void loop() {
 
   robot.loop();
 
-  delay(500);
+  delay(100);
 
 }

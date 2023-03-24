@@ -3,7 +3,7 @@
 
 #include <Arduino.h>
 
-#define FREQUENCY 10000
+#define FREQUENCY 100
 
 class Motor
 {
@@ -18,8 +18,8 @@ class Motor
 
     protected:
 
-    uint8_t motor_A;
-    uint8_t motor_B;
+    gpio_num_t motor_A;
+    gpio_num_t motor_B;
 
     uint16_t speed;
 
@@ -27,13 +27,16 @@ class Motor
 
     public:
 
-    Motor(uint8_t mA,uint8_t mB)
+    Motor(gpio_num_t mA,gpio_num_t mB)
     : motor_A(mA),
     motor_B(mB),
     speed(0)
     {
-        pinMode(motor_A,OUTPUT);
-        pinMode(motor_B,OUTPUT);
+        gpio_set_direction(motor_A,GPIO_MODE_OUTPUT);
+        gpio_set_direction(motor_B,GPIO_MODE_OUTPUT);
+
+        gpio_set_level(motor_A,1);
+        gpio_set_level(motor_B,1);
 
         ledcSetup(1,FREQUENCY,16);
         ledcSetup(2,FREQUENCY,16);
@@ -51,7 +54,7 @@ class Motor
 
     void Update(const Modes& _m,const uint16_t _speed)
     {
-        speed=0;
+        speed=_speed;
         mode=_m;
         switch(mode)
         {

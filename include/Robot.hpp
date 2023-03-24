@@ -51,6 +51,8 @@ class Robot
 
     uint32_t width;
 
+    uint32_t z_axis;
+
     bool on_track()
     {
         adc2_get_raw(_sensor,ADC_WIDTH_BIT_10,&adc_out);
@@ -83,6 +85,7 @@ class Robot
     {
         adc_out=0;
         width=0;
+        z_axis=0;
 
         regulator.setMax(90.0);
         regulator.setMin(-90.0);
@@ -106,29 +109,25 @@ class Robot
     // main loop, dt - timestamp
     void loop(double dt)
     {
-        if(on_track())
+        /*if(on_track())
         {
             Serial.println("On track!");
             return;
-        }
+        }*/
 
-        if(!mpu.testConnection())
-        {
-            return;
-        }
-
-        int16_t z=mpu.getRotationZ();
+        int32_t z=mpu.getRotationZ();
 
         if(abs(z)<45)
         {
             return;
         }
 
-        angel=regulator.step(z,dt);
+        z_axis+=z*dt;
+
+        angel=regulator.step(z_axis,dt);
 
         set_angel(angel);
         
-
         Serial.println("Gyroscope:");
         Serial.print("z: ");
         Serial.print(z);

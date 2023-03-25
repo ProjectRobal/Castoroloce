@@ -60,6 +60,8 @@ class Robot
 
     float target_angel;
 
+    float angel_offset;
+
     uint32_t width;
 
     int32_t z_axis;
@@ -147,6 +149,11 @@ class Robot
             black_threshold=doc["black_threshold"];
         }
 
+        if(doc.containsKey("offset"))
+        {
+            angel_offset=doc["offset"];
+        }
+
         regulator.setParams(p,i,d);
 
         file.close();
@@ -165,6 +172,8 @@ class Robot
         servo_min=SERVO_MIN;
 
         servo_max=SERVO_MAX;
+
+        angel_offset=0.0;
     }
 
     public:
@@ -187,6 +196,8 @@ class Robot
             default_config();
         }
 
+        #ifdef DEBUG
+
         Serial.println("PID params:");
         Serial.print("P: ");
         Serial.println(regulator.P());
@@ -194,6 +205,8 @@ class Robot
         Serial.println(regulator.I());
         Serial.print("D: ");
         Serial.println(regulator.D());
+
+        #endif
         
         //servo, channel 3 , 50 Hz , 16 bits resolution
         ledcSetup(3,50,16);
@@ -205,7 +218,7 @@ class Robot
         mpu.setFullScaleAccelRange(MPU6050_IMU::ACCEL_FS::MPU6050_ACCEL_FS_8);
         mpu.setFullScaleGyroRange(MPU6050_IMU::GYRO_FS::MPU6050_GYRO_FS_2000);
 
-        set_angel(0);
+        set_angel(angel_offset);
 
         regulator.setMax(90);
         regulator.setMin(-90);
@@ -254,7 +267,9 @@ class Robot
 
         angel=regulator.step(z_axis,dt);
 
-        set_angel(target_angel+angel);
+        set_angel(target_angel+angel+angel_offset);
+
+        #ifdef DEBUG
         
         Serial.println("Gyroscope:");
         Serial.print("z: ");
@@ -262,9 +277,10 @@ class Robot
         Serial.print(" z axis: ");
         Serial.println(z_axis);
         Serial.println(" Angel: ");
-        Serial.print(angel);
+        Serial.print(angel+angel_offset);
         Serial.println();
 
+        #endif
     }
 
     void stop()

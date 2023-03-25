@@ -71,6 +71,12 @@ void setup() {
 
 void loop() {
 
+  if(Serial.available())
+  {
+    robot->terminal(Serial.read());
+  }
+
+
   if(!gpio_get_level(STARTER))
   {
     robot->stop();
@@ -85,5 +91,6 @@ void loop() {
   xSemaphoreGive(xSemaphore);
   timerAlarmEnable(loop_timer);
   }
+
 
 }

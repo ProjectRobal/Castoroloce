@@ -176,6 +176,50 @@ class Robot
         angel_offset=0.0;
     }
 
+    char buff[32];
+    uint8_t cmd_iter;
+
+    char cmd;
+
+    // bits:
+    // 0 - command readed
+    // 1 - number readed
+    uint8_t cmd_control;
+
+    void execute_cmd()
+    {
+        if(!(cmd_control&(1<<1)))
+        {
+            return;
+        }
+
+        cmd_control=0;
+        cmd_iter=0;
+
+        float var=atof(buff);
+
+        switch(cmd)
+        {
+            case 'p':
+            case 'P':
+                regulator.setP(var);
+            break;
+
+            case 'I':
+            case 'i':
+                regulator.setI(var);
+            break;
+
+            case 'd':
+            case 'D':
+                regulator.setD(var);
+            break;
+        }
+
+        memset(buff,0,32);
+    }
+
+
     public:
 
     Robot(gpio_num_t mA,gpio_num_t mB,gpio_num_t servo,adc2_channel_t sensor)
@@ -184,6 +228,8 @@ class Robot
     _sensor(sensor),
     regulator(1.0,0.0,0.0)
     {
+        cmd_control=0;
+        cmd_iter=0;
         SoftStart=true;
         ticks_elapsed=0;
         adc_out=0;
@@ -232,17 +278,13 @@ class Robot
         {
             if(ticks_elapsed<=2)
             {
-                _m.Update(Motor::FORWARD,max_speed/10);
+                _m.Update(Motor::FORWARD,max_speed/4);
             }
-            else if((ticks_elapsed>2)&&(ticks_elapsed<=4))
-            {
-                _m.Update(Motor::FORWARD,max_speed/5);
-            }
-            else if((ticks_elapsed>4)&&(ticks_elapsed<=6))
+            else if((ticks_elapsed>2)&&(ticks_elapsed<4))
             {
                 _m.Update(Motor::FORWARD,max_speed/2);
             }
-            else if(ticks_elapsed>6)
+            else if(ticks_elapsed>=4)
             {
                 _m.Update(Motor::FORWARD,max_speed);
                 SoftStart=false;
@@ -286,6 +328,30 @@ class Robot
     void stop()
     {
         _m.stop();
+    }
+
+    void terminal(char c)
+    {
+        if((c=='\n')||(c=='\r'))
+        {
+            cmd_control|=(1<<1);
+        }
+        else if(!(cmd_control&(1<<0)))
+        {
+            cmd=c;
+            cmd_control|=(1<<0);
+        }
+        else
+        {
+            buff[cmd_iter++]=c;
+
+            if(cmd_iter>=32)
+            {
+                cmd_control|=(1<<1);
+            }
+        }
+
+        execute_cmd();
     }
 
     ~Robot()

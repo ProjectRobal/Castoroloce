@@ -1,0 +1,9 @@
+{
+    "P":1.0,
+    "I":0.0,
+    "D":0.0,
+    "max_speed": 0,
+    "servo_min": 1700,
+    "servo_max": 3200,
+    "black_threshold": 280
+}

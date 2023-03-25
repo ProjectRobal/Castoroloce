@@ -12,7 +12,7 @@
 #define MOTORA (gpio_num_t)16
 #define MOTORB (gpio_num_t)17
 
-#define STARTER (gpio_num_t)36
+#define STARTER (gpio_num_t)39
 
 #define SENSOR ADC2_CHANNEL_0
 
@@ -37,6 +37,14 @@ void IRAM_ATTR onTimer()
 
 void setup() {
 
+  gpio_set_direction(MOTORA,GPIO_MODE_OUTPUT);
+  gpio_set_direction(MOTORB,GPIO_MODE_OUTPUT);
+
+  gpio_set_level(MOTORA,1);
+  gpio_set_level(MOTORB,1);
+
+  delay(50);
+
   gpio_set_direction(STARTER,GPIO_MODE_INPUT);
 
   gpio_set_direction(LED,GPIO_MODE_OUTPUT);
@@ -58,6 +66,7 @@ void setup() {
 
   robot=new Robot(MOTORA,MOTORB,SERVO_PIN,SENSOR);
 
+
 }
 
 void loop() {
@@ -65,8 +74,9 @@ void loop() {
   if(!gpio_get_level(STARTER))
   {
     robot->stop();
+    return;
   }
-
+  
   if(xSemaphoreTake(xSemaphore,portMAX_DELAY))
   {
   timerAlarmDisable(loop_timer);

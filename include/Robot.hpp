@@ -4,6 +4,10 @@
 
 #include <MPU6050.h>
 
+#include <FS.h>
+#include <SPIFFS.h>
+#include <ArduinoJson.h>
+
 #include <driver/adc.h>
 
 #include <Motor.hpp>
@@ -13,6 +17,8 @@
 
 #include <Vectors.hpp>
 
+
+#define CONFIG_FILE "/config.json"
 
 // for same or less the sensor is on black
 #define SENSOR_ON_BLACK 280
@@ -28,7 +34,7 @@
 #define SERVO_MAX 3200
 
 // 0 for testing purposed
-#define MAX_SPEED 0 //256 //65535
+#define MAX_SPEED 256 //0 //65535
 
 
 class Robot
@@ -56,17 +62,26 @@ class Robot
 
     uint32_t width;
 
-    uint32_t z_axis;
+    int32_t z_axis;
 
     bool SoftStart;
 
     uint16_t ticks_elapsed;
 
+    uint16_t max_speed;
+
+    uint16_t black_threshold;
+
+    uint16_t servo_min;
+
+    uint16_t servo_max;
+
+
     bool on_track()
     {
         adc2_get_raw(_sensor,ADC_WIDTH_BIT_10,&adc_out);
 
-        return SENSOR_ON_BLACK >= adc_out;
+        return black_threshold >= adc_out;
     }
 
     void read_mpu()
@@ -80,9 +95,77 @@ class Robot
     {
         angel+=90;
 
-        ledcWrite(3,SERVO_MIN + (angel/180.0) * (SERVO_MAX-SERVO_MIN));
+        ledcWrite(3,servo_min + (angel/180.0) * (servo_max-servo_min));
     }
 
+    bool load_config_from_flash()
+    {
+        if(!SPIFFS.begin(true))
+        {
+            return false;
+        }
+
+        StaticJsonDocument<200> doc;
+
+        fs::File file=SPIFFS.open(CONFIG_FILE);
+
+        if(!file)
+        {
+            return false;    
+        }        
+
+        DeserializationError error = deserializeJson(doc, file);
+
+        if(error)
+        {
+            return false;
+        }
+
+        default_config();
+
+        float p=doc["P"];
+        float i=doc["I"];
+        float d=doc["D"];  
+
+        if(doc.containsKey("max_speed"))
+        {
+            max_speed=doc["max_speed"];
+        }
+
+        if(doc.containsKey("servo_min"))
+        {
+            servo_min=doc["servo_min"];
+        } 
+
+        if(doc.containsKey("servo_max"))
+        {
+            servo_max=doc["servo_max"];
+        }
+
+        if(doc.containsKey("black_threshold"))
+        {
+            black_threshold=doc["black_threshold"];
+        }
+
+        regulator.setParams(p,i,d);
+
+        file.close();
+
+        return true;
+    }
+
+    void default_config()
+    {
+        regulator.setParams(1.0,0.0,0.0);
+
+        max_speed=MAX_SPEED;
+
+        black_threshold=SENSOR_ON_BLACK;
+
+        servo_min=SERVO_MIN;
+
+        servo_max=SERVO_MAX;
+    }
 
     public:
 
@@ -90,7 +173,7 @@ class Robot
     : _m(mA,mB),
     _servo(servo),
     _sensor(sensor),
-    regulator(-0.01,0,0)
+    regulator(1.0,0.0,0.0)
     {
         SoftStart=true;
         ticks_elapsed=0;
@@ -99,8 +182,18 @@ class Robot
         z_axis=0;
         target_angel=0;
 
-        regulator.setMax(90.0);
-        regulator.setMin(-90.0);
+        if(!load_config_from_flash())
+        {
+            default_config();
+        }
+
+        Serial.println("PID params:");
+        Serial.print("P: ");
+        Serial.println(regulator.P());
+        Serial.print("I: ");
+        Serial.println(regulator.I());
+        Serial.print("D: ");
+        Serial.println(regulator.D());
         
         //servo, channel 3 , 50 Hz , 16 bits resolution
         ledcSetup(3,50,16);
@@ -124,21 +217,21 @@ class Robot
 
         if(SoftStart)
         {
-            if(ticks_elapsed<5)
+            if(ticks_elapsed<=2)
             {
-                _m.Update(Motor::FORWARD,MAX_SPEED/10);
+                _m.Update(Motor::FORWARD,max_speed/10);
             }
-            else if((ticks_elapsed>10)&&(ticks_elapsed<=15))
+            else if((ticks_elapsed>2)&&(ticks_elapsed<=4))
             {
-                _m.Update(Motor::FORWARD,MAX_SPEED/5);
+                _m.Update(Motor::FORWARD,max_speed/5);
             }
-            else if((ticks_elapsed>15)&&(ticks_elapsed<=20))
+            else if((ticks_elapsed>4)&&(ticks_elapsed<=6))
             {
-                _m.Update(Motor::FORWARD,MAX_SPEED/2);
+                _m.Update(Motor::FORWARD,max_speed/2);
             }
-            else if(ticks_elapsed>20)
+            else if(ticks_elapsed>6)
             {
-                _m.Update(Motor::FORWARD,MAX_SPEED);
+                _m.Update(Motor::FORWARD,max_speed);
                 SoftStart=false;
             }
 
@@ -146,7 +239,7 @@ class Robot
         }
         else
         {
-            _m.Update(Motor::FORWARD,MAX_SPEED);
+            _m.Update(Motor::FORWARD,max_speed);
         }
 
         int32_t z=mpu.getRotationZ();
@@ -166,9 +259,9 @@ class Robot
         Serial.println("Gyroscope:");
         Serial.print("z: ");
         Serial.print(z);
-        Serial.print("z axis: ");
+        Serial.print(" z axis: ");
         Serial.println(z_axis);
-        Serial.println("Angel: ");
+        Serial.println(" Angel: ");
         Serial.print(angel);
         Serial.println();
 

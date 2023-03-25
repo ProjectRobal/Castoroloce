@@ -52,7 +52,7 @@ class Motor
         return mode;
     }
 
-    void Update(const Modes& _m,const uint16_t _speed)
+    void Update(Modes _m,const uint16_t _speed)
     {
         speed=_speed;
         mode=_m;
@@ -83,6 +83,11 @@ class Motor
     uint16_t Speed() const
     {
         return speed;
+    }
+
+    void stop()
+    {
+        Update(STOP,0);
     }
 
 

@@ -12,13 +12,14 @@
 #define MOTORA (gpio_num_t)16
 #define MOTORB (gpio_num_t)17
 
-#define STARTER (gpio_num_t)2
+#define STARTER (gpio_num_t)36
 
 #define SENSOR ADC2_CHANNEL_0
 
 // set appropiet pin
 #define SERVO_PIN (gpio_num_t)5
 
+#define LED (gpio_num_t)2
 
 // for same or less the sensor is on black
 #define SENSOR_ON_BLACK 280
@@ -35,6 +36,11 @@ void IRAM_ATTR onTimer()
 }
 
 void setup() {
+
+  gpio_set_direction(STARTER,GPIO_MODE_INPUT);
+
+  gpio_set_direction(LED,GPIO_MODE_OUTPUT);
+
   xSemaphoreGive(xSemaphore);
   // put your setup code here, to run once:
   Serial.begin(115200);
@@ -55,6 +61,11 @@ void setup() {
 }
 
 void loop() {
+
+  if(!gpio_get_level(STARTER))
+  {
+    robot->stop();
+  }
 
   if(xSemaphoreTake(xSemaphore,portMAX_DELAY))
   {

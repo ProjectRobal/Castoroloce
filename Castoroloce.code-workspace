@@ -1,0 +1,15 @@
+{
+	"folders": [
+		{
+			"name": "Castoroloce",
+			"path": "."
+		}
+	],
+	"settings": {
+		"files.associations": {
+			"functional": "cpp",
+			"memory": "cpp",
+			"sstream": "cpp"
+		}
+	}
+}

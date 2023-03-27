@@ -64,7 +64,7 @@ class Robot
 
     uint32_t width;
 
-    int32_t z_axis;
+    double z_axis;
 
     bool SoftStart;
 
@@ -181,6 +181,8 @@ class Robot
 
     char cmd;
 
+    int32_t gyro_error;
+
     // bits:
     // 0 - command readed
     // 1 - number readed
@@ -262,12 +264,30 @@ class Robot
         mpu.initialize();
 
         mpu.setFullScaleAccelRange(MPU6050_IMU::ACCEL_FS::MPU6050_ACCEL_FS_8);
-        mpu.setFullScaleGyroRange(MPU6050_IMU::GYRO_FS::MPU6050_GYRO_FS_2000);
+        mpu.setFullScaleGyroRange(MPU6050_IMU::GYRO_FS::MPU6050_GYRO_FS_500);
+        mpu.setFIFOEnabled(true);
+        mpu.CalibrateGyro();
 
         set_angel(angel_offset);
 
         regulator.setMax(90);
         regulator.setMin(-90);
+        
+        mpu_error();
+
+        Serial.print("Gyro error: ");
+        Serial.println(gyro_error);
+    }
+
+    void mpu_error(uint32_t n=30)
+    {
+
+        for(uint8_t i=0;i<n;++i)
+        {
+            gyro_error+=mpu.getRotationZ();
+        }
+
+        gyro_error/=n;
     }
 
     // main loop, dt - timestamp
@@ -276,15 +296,15 @@ class Robot
 
         if(SoftStart)
         {
-            if(ticks_elapsed<=2)
+            if(ticks_elapsed==1)
             {
-                _m.Update(Motor::FORWARD,max_speed/4);
+                _m.Update(Motor::FORWARD,max_speed/3);
             }
-            else if((ticks_elapsed>2)&&(ticks_elapsed<4))
+            else if(ticks_elapsed==2)
             {
                 _m.Update(Motor::FORWARD,max_speed/2);
             }
-            else if(ticks_elapsed>=4)
+            else if(ticks_elapsed>=3)
             {
                 _m.Update(Motor::FORWARD,max_speed);
                 SoftStart=false;
@@ -297,15 +317,15 @@ class Robot
             _m.Update(Motor::FORWARD,max_speed);
         }
 
-        int32_t z=mpu.getRotationZ();
+        int32_t z=mpu.getRotationZ()-gyro_error;
 
         // filter some noises
-        if(abs(z)<45)
+        if(abs(z)<=2)
         {
             return;
         }
 
-        z_axis+=z*dt;
+        z_axis+=(z/32767.0)*500.0*dt;
 
         angel=regulator.step(z_axis,dt);
 

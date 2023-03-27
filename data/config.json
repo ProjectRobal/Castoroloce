@@ -1,10 +1,10 @@
 {
-    "P":2.0,
+    "P":10.0,
     "I":0.0,
-    "D":3.0,
-    "max_speed": 5000,
+    "D":0.001,
+    "max_speed": 20000,
     "servo_min": 1700,
     "servo_max": 3200,
     "black_threshold": 280,
-    "offset":5
+    "offset":0
 }

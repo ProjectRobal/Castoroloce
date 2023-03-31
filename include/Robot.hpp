@@ -181,7 +181,7 @@ class Robot
 
     char cmd;
 
-    int32_t gyro_error;
+    int64_t gyro_error;
 
     // bits:
     // 0 - command readed
@@ -263,10 +263,10 @@ class Robot
 
         mpu.initialize();
 
-        mpu.setFullScaleAccelRange(MPU6050_IMU::ACCEL_FS::MPU6050_ACCEL_FS_8);
-        mpu.setFullScaleGyroRange(MPU6050_IMU::GYRO_FS::MPU6050_GYRO_FS_500);
+        mpu.setFullScaleAccelRange(MPU6050_IMU::ACCEL_FS::MPU6050_ACCEL_FS_2);
+        mpu.setFullScaleGyroRange(MPU6050_IMU::GYRO_FS::MPU6050_GYRO_FS_2000);
         mpu.setFIFOEnabled(true);
-        mpu.CalibrateGyro();
+        //mpu.CalibrateGyro();
 
         set_angel(angel_offset);
 
@@ -275,36 +275,37 @@ class Robot
         
         mpu_error();
 
-        Serial.print("Gyro error: ");
-        Serial.println(gyro_error);
+        //Serial.print("Gyro error: ");
+        //Serial.println(gyro_error);
     }
 
-    void mpu_error(uint32_t n=30)
+    void mpu_error(int32_t n=30)
     {
+        gyro_error=0;
 
-        for(uint8_t i=0;i<n;++i)
+        for(uint32_t i=0;i<n;++i)
         {
             gyro_error+=mpu.getRotationZ();
         }
 
-        gyro_error/=n;
+        gyro_error=gyro_error/n;
     }
 
     // main loop, dt - timestamp
     void loop(double dt)
     {
 
-        if(SoftStart)
+       /*if(SoftStart)
         {
             if(ticks_elapsed==1)
             {
                 _m.Update(Motor::FORWARD,max_speed/3);
             }
-            else if(ticks_elapsed==2)
+            else if(ticks_elapsed==1)
             {
                 _m.Update(Motor::FORWARD,max_speed/2);
             }
-            else if(ticks_elapsed>=3)
+            else if(ticks_elapsed>=2)
             {
                 _m.Update(Motor::FORWARD,max_speed);
                 SoftStart=false;
@@ -312,24 +313,32 @@ class Robot
 
             ++ticks_elapsed;
         }
-        else
-        {
+        else*/
+        //{
             _m.Update(Motor::FORWARD,max_speed);
-        }
+        //}
 
-        int32_t z=mpu.getRotationZ()-gyro_error;
+        int32_t z=mpu.getRotationZ()+24;
 
         // filter some noises
-        if(abs(z)<=2)
+        if(abs(z)<=25)
         {
             return;
         }
 
-        z_axis+=(z/32767.0)*500.0*dt;
+        //Serial.print("Gyro error: ");
+        //Serial.println(gyro_error);
 
-        angel=regulator.step(z_axis,dt);
+        z_axis+=(z/16.4 )*dt;
 
-        set_angel(target_angel+angel+angel_offset);
+        angel=regulator.step(z_axis-target_angel,dt);
+
+        set_angel(angel+angel_offset);
+
+        /*if(abs(z_axis)>=0.05)
+        {
+        _m.Update(Motor::FORWARD,4000);
+        }*/
 
         #ifdef DEBUG
         

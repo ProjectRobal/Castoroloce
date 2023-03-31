@@ -1,0 +1,25 @@
+to_działa5.json - po zmniejszeniu wartość członu różniczkującego robot mniej wychyla się na boki.
+
+PID: 20 0 -0.01 - wychyla się mniej nie wyjeżdża poza linię
+
+PID: 20 0 -0.005 - wychylenie bez większych zmian
+
+PID: 15 0 -0.005 - wychylenie delikatnie mniejsze?
+
+PID: 10 0 -0.005 - wciąż się wychyla
+
+PID: 10 0 -0.01 - wciąż oscyluje
+
+PID: 2 0 -0.0001 - w pewnym momencie wpada w osyclacje po jakimś dystansie
+
+PID: 2 0 -0.001 - w pewnym momencie wpada w osyclacje po jakimś dystansie
+
+PID: 2 0 -0.005 - w pewnym momencie wpada w osyclacje po jakimś dystansie
+
+PID: 2 0 0 - zauważyłem że głupieje na nierównej powierzchni
+
+PID: 2 0 0.001 - przy nierównej powierzchni głupieje
+
+PID: 1 0 0 - zbyt się rozjeżdża
+
+PID: 1.5 0 0.5 -

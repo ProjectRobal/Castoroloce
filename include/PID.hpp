@@ -106,7 +106,7 @@ class PID
     T step(T x,double dt)
     {
 
-        last_output=filter(_p*x + _i*x*dt + _d*((last_output-x)/dt));
+        last_output=filter(_p*x + _i*x*dt + _d*((x-last_output)/dt));
 
         return last_output;
     }

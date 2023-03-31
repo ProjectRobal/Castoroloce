@@ -2,7 +2,7 @@
 
 #include <Robot.hpp>
 
-#define TIMESTAMP 0.001
+#define TIMESTAMP 0.01
 
 
 #define SDA 23
@@ -59,7 +59,7 @@ void setup() {
 
   loop_timer=timerBegin(0,80,true);
   timerAttachInterrupt(loop_timer,&onTimer,true);
-  timerAlarmWrite(loop_timer,1000,true);
+  timerAlarmWrite(loop_timer,10000,true);
   timerAlarmEnable(loop_timer);
 
   xSemaphoreTake(xSemaphore,portMAX_DELAY);
